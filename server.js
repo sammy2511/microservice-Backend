@@ -10,10 +10,16 @@ const shortid = require("short-id");
 const validUrl = require("valid-url");
 const port = process.env.PORT || 5000;
 var app = express();
-const baseUri = `https://localhost:${port}`;
 
 //middleware
 app.use(bodyParser.json());
+
+app.use(function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', "*");
+    res.header('Access-Control-Allow-Methods','GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+})
 
 
 //route to Add new user
@@ -62,7 +68,6 @@ app.get('/api/timestamp/:date_string?',(req,res)=>{
        
         response.unix = moment().unix();
         response.utc= moment().toISOString();
-
         res.send(response);
         
     }else{
@@ -113,16 +118,15 @@ app.get('/:code', async (req,res)=>{
 
 //Generate Short URL
 app.post('/api/shorten',async (req,res) =>{
-    
+    const baseUri = req.headers['host'];
     const {url} = req.body;
-
     const code = shortid.generate();
-    
 
     if(validUrl.isUri(url)){
         const item = await Url.findOne({originalUrl:url});
 
         if(item){
+           
             res.status(200).json(item);
         }else{
             const shortUrl = baseUri + "/" + code;
@@ -134,6 +138,7 @@ app.post('/api/shorten',async (req,res) =>{
             })
 
             await item.save();
+            
             res.status(200).send(item);
         }
         
